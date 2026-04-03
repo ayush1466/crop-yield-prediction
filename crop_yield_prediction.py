@@ -1,152 +1,115 @@
-"""
-Crop Yield Prediction Using Machine Learning
-============================================
-"""
+﻿from __future__ import annotations
+
+import warnings
 
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-import warnings
-warnings.filterwarnings('ignore')
 
-# ─────────────────────────────────────────────
-# STEP 1: Load Dataset
-# ─────────────────────────────────────────────
-df = pd.read_csv("crop_yield_dataset.csv")
+from agri_core import (
+    benchmark_profile,
+    compare_scenarios,
+    find_similar_records,
+    generate_management_tips,
+    load_dataset,
+    rank_crops_for_conditions,
+    train_models,
+)
 
-# 🔥 FIX 1: Clean column names (removes spaces, lowercase)
-df.columns = df.columns.str.strip().str.lower()
+warnings.filterwarnings("ignore")
 
-print("=" * 55)
-print("  CROP YIELD PREDICTION — ML PROJECT")
-print("=" * 55)
 
-print("\nAvailable columns:", df.columns.tolist())
+def print_section(title: str) -> None:
+    print("\n" + "=" * 72)
+    print(title)
+    print("=" * 72)
 
-# 🔥 FIX 2: Auto-detect column names
-def find_col(possible_names):
-    for name in possible_names:
-        if name in df.columns:
-            return name
-    return None
 
-def find_col(possible_names):
-    for name in possible_names:
-        if name in df.columns:
-            return name
-    return None
+def format_metrics(frame: pd.DataFrame) -> pd.DataFrame:
+    formatted = frame.copy()
+    for column in ["r2", "mae", "rmse", "cv_r2_mean", "cv_r2_std"]:
+        formatted[column] = formatted[column].map(lambda value: f"{value:.4f}")
+    return formatted
 
-yield_col = find_col(['yield_kg_per_ha'])
-fert_col  = find_col(['fertilizer_kg_per_ha', 'fertilizer_kg_ha'])
-rain_col  = find_col(['rainfall_mm'])
-temp_col  = find_col(['temperature', 'temperature_c'])
-humid_col = find_col(['humidity', 'humidity_pct'])
 
-# Check required columns
-if None in [yield_col, fert_col, rain_col, temp_col, humid_col]:
-    print("\n❌ ERROR: Some required columns not found.")
-    print("👉 Please check dataset column names.")
-    exit()
+def main() -> None:
+    dataframe = load_dataset()
+    bundle = train_models(dataframe)
 
-# ─────────────────────────────────────────────
-# STEP 2: EDA
-# ─────────────────────────────────────────────
-print("\n[STEP 2] Exploratory Data Analysis")
-print(f"  Dataset shape : {df.shape}")
-print(f"  Missing values: {df.isnull().sum().sum()}")
-print(f"  Yield range   : {df[yield_col].min():.0f} – {df[yield_col].max():.0f} kg/ha")
-print(f"  Avg yield     : {df[yield_col].mean():.0f} kg/ha")
+    print_section("Crop Yield Intelligence Suite")
+    print(f"Rows               : {len(dataframe)}")
+    print(f"Columns            : {len(dataframe.columns)}")
+    print(f"Crops covered      : {dataframe['crop'].nunique()}")
+    print(f"States covered     : {dataframe['state'].nunique()}")
+    print(f"Average yield      : {dataframe['yield_kg_per_ha'].mean():.1f} kg/ha")
+    print(f"Best model         : {bundle['best_model_name']}")
 
-fig, axes = plt.subplots(2, 3, figsize=(15, 9))
+    print_section("Model Leaderboard")
+    print(format_metrics(bundle["leaderboard"]).to_string(index=False))
 
-axes[0,0].hist(df[yield_col], bins=40)
-axes[0,0].set_title("Yield Distribution")
+    profile = {
+        "crop": "Rice",
+        "state": "Punjab",
+        "season": "Kharif",
+        "soil_type": "Alluvial",
+        "rainfall_mm": 1200.0,
+        "temperature_c": 28.0,
+        "humidity_pct": 72.0,
+        "fertilizer_kg_ha": 180.0,
+        "area_hectares": 12.0,
+    }
 
-if 'crop' in df.columns:
-    df.groupby('crop')[yield_col].mean().plot(kind='barh', ax=axes[0,1])
-    axes[0,1].set_title("Avg Yield by Crop")
+    benchmark = benchmark_profile(dataframe, profile)
+    similar_records = find_similar_records(dataframe, profile)
+    tips = generate_management_tips(dataframe, profile)
+    predicted_yield = bundle["best_model"].predict(pd.DataFrame([profile]))[0]
 
-if 'season' in df.columns:
-    df.groupby('season')[yield_col].mean().plot(kind='bar', ax=axes[0,2])
-    axes[0,2].set_title("Avg Yield by Season")
+    print_section("Field Forecast")
+    print(f"Profile crop       : {profile['crop']}")
+    print(f"Predicted yield    : {predicted_yield:.1f} kg/ha")
+    print(f"Projected output   : {predicted_yield * profile['area_hectares']:.1f} kg")
+    print(
+        "Benchmark context  : "
+        f"{benchmark['benchmark_level']} "
+        f"(n={benchmark['sample_size']})"
+    )
+    print(f"Benchmark avg yield: {benchmark['avg_yield']:.1f} kg/ha")
 
-axes[1,0].scatter(df[rain_col], df[yield_col], alpha=0.3)
-axes[1,0].set_title("Rainfall vs Yield")
+    print_section("Recommended Actions")
+    for index, tip in enumerate(tips, start=1):
+        print(f"{index}. {tip}")
 
-axes[1,1].scatter(df[fert_col], df[yield_col], alpha=0.3)
-axes[1,1].set_title("Fertilizer vs Yield")
+    print_section("Closest Historical Records")
+    print(similar_records.round(2).to_string(index=False))
 
-num_cols = [rain_col, temp_col, humid_col, fert_col, yield_col]
-sns.heatmap(df[num_cols].corr(), annot=True, ax=axes[1,2])
+    recommendation_context = {
+        "state": "Punjab",
+        "season": "Kharif",
+        "soil_type": "Alluvial",
+        "rainfall_mm": 1200.0,
+        "temperature_c": 28.0,
+        "humidity_pct": 72.0,
+        "fertilizer_kg_ha": 180.0,
+        "area_hectares": 12.0,
+    }
+    crop_rankings = rank_crops_for_conditions(
+        bundle["best_model"], dataframe, recommendation_context, top_n=5
+    )
 
-plt.tight_layout()
-plt.show()
+    print_section("Crop Planning Recommendations")
+    print(crop_rankings.round(2).to_string(index=False))
 
-# ─────────────────────────────────────────────
-# STEP 3: Preprocessing
-# ─────────────────────────────────────────────
-print("\n[STEP 3] Data Preprocessing")
+    improved_profile = profile.copy()
+    improved_profile["rainfall_mm"] = 1350.0
+    improved_profile["fertilizer_kg_ha"] = 200.0
+    improved_profile["humidity_pct"] = 76.0
 
-le = LabelEncoder()
+    scenario = compare_scenarios(bundle["best_model"], profile, improved_profile)
 
-for col in ['crop', 'state', 'season', 'soil_type']:
-    if col in df.columns:
-        df[col + '_enc'] = le.fit_transform(df[col])
-    else:
-        df[col + '_enc'] = 0  # fallback
+    print_section("Scenario Comparison")
+    print(f"Baseline yield     : {scenario['baseline_yield']:.1f} kg/ha")
+    print(f"Improved yield     : {scenario['candidate_yield']:.1f} kg/ha")
+    print(f"Yield change       : {scenario['delta_yield']:.1f} kg/ha")
+    print(f"Production change  : {scenario['delta_production']:.1f} kg")
 
-feature_cols = [
-    'crop_enc', 'state_enc', 'season_enc', 'soil_type_enc',
-    rain_col, temp_col, humid_col, fert_col
-]
 
-if 'area_hectares' in df.columns:
-    feature_cols.append('area_hectares')
-else:
-    df['area_hectares'] = 1
-    feature_cols.append('area_hectares')
-
-X = df[feature_cols]
-y = df[yield_col]
-
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42)
-
-scaler = StandardScaler()
-X_train_sc = scaler.fit_transform(X_train)
-X_test_sc  = scaler.transform(X_test)
-
-# ─────────────────────────────────────────────
-# STEP 4: Models
-# ─────────────────────────────────────────────
-print("\n[STEP 4] Training Models...")
-
-def evaluate(name, model, X_tr, X_te):
-    model.fit(X_tr, y_train)
-    preds = model.predict(X_te)
-    print(f"{name} R2:", r2_score(y_test, preds))
-    return model, preds
-
-lr_model, lr_preds = evaluate("Linear", LinearRegression(), X_train_sc, X_test_sc)
-rf_model, rf_preds = evaluate("Random Forest", RandomForestRegressor(), X_train, X_test)
-gb_model, gb_preds = evaluate("Gradient Boost", GradientBoostingRegressor(), X_train, X_test)
-
-# ─────────────────────────────────────────────
-# STEP 5: Prediction
-# ─────────────────────────────────────────────
-print("\n[STEP 5] Sample Prediction")
-
-def predict_yield(rainfall, temp, humidity, fertilizer, area=1):
-    sample = np.array([[0,0,0,0, rainfall, temp, humidity, fertilizer, area]])
-    pred = rf_model.predict(sample)[0]
-    print(f"Predicted Yield: {pred:.2f} kg/ha")
-
-predict_yield(1200, 28, 75, 150, 5)
-
-print("\n✅ Project completed without errors!")
+if __name__ == "__main__":
+    main()
