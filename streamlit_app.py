@@ -19,6 +19,17 @@ from agri_core import (
 )
 
 
+CHART_BG = "#ffffff"
+TEXT_COLOR = "#17212b"
+GRID_COLOR = "#d7dee8"
+PRIMARY_COLOR = "#1f6aa5"
+ACCENT_GREEN = "#3d8b63"
+ACCENT_ORANGE = "#d97706"
+ACCENT_RED = "#c2410c"
+ACCENT_GOLD = "#b58900"
+ACCENT_TEAL = "#0f766e"
+
+
 st.set_page_config(
     page_title="Agri Yield Intelligence Suite",
     page_icon="AG",
@@ -102,6 +113,20 @@ def render_metric_card(title: str, value: str, subtitle: str = "") -> None:
     )
 
 
+def style_axis(ax) -> None:
+    ax.set_facecolor(CHART_BG)
+    ax.tick_params(colors=TEXT_COLOR, labelsize=10)
+    ax.xaxis.label.set_color(TEXT_COLOR)
+    ax.yaxis.label.set_color(TEXT_COLOR)
+    ax.title.set_color(TEXT_COLOR)
+    ax.grid(axis="y", color=GRID_COLOR, linewidth=0.8, alpha=0.9)
+    ax.set_axisbelow(True)
+    for spine in ["top", "right"]:
+        ax.spines[spine].set_visible(False)
+    ax.spines["left"].set_color("#b8c4d1")
+    ax.spines["bottom"].set_color("#b8c4d1")
+
+
 dataframe = get_dataset()
 bundle = get_model_bundle(dataframe)
 options = list_options(dataframe)
@@ -115,37 +140,41 @@ st.markdown(
     <style>
         .stApp {
             background:
-                radial-gradient(circle at top left, rgba(192, 220, 173, 0.45), transparent 30%),
-                linear-gradient(180deg, #f7f4ea 0%, #eef3e2 100%);
-            color: #1f2e1d;
+                radial-gradient(circle at top left, rgba(123, 176, 232, 0.18), transparent 28%),
+                linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+            color: #17212b;
             font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+        }
+        .stApp [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #eaf2fb 0%, #dfeaf7 100%);
+            border-right: 1px solid #c4d5e8;
         }
         .hero {
             padding: 1.75rem;
             border-radius: 20px;
-            background: linear-gradient(135deg, rgba(43, 78, 52, 0.96), rgba(113, 142, 91, 0.88));
-            color: #f8f7f0;
-            box-shadow: 0 16px 40px rgba(52, 78, 65, 0.15);
+            background: linear-gradient(135deg, #174c7c, #2f7eb6);
+            color: #f8fbff;
+            box-shadow: 0 16px 40px rgba(34, 80, 120, 0.18);
             margin-bottom: 1rem;
         }
         .hero h1 {
             font-family: Georgia, "Times New Roman", serif;
             font-size: 2.3rem;
             margin-bottom: 0.35rem;
-            color: #fff9ee;
+            color: #ffffff;
         }
         .hero p {
             font-size: 1rem;
             line-height: 1.55;
             margin-bottom: 0;
-            color: #edf3e5;
+            color: #eef6fd;
         }
         .metric-card {
-            background: rgba(255, 252, 244, 0.82);
-            border: 1px solid rgba(81, 118, 72, 0.18);
+            background: #ffffff;
+            border: 1px solid #c9d8e6;
             border-radius: 18px;
             padding: 1rem 1.1rem;
-            box-shadow: 0 10px 24px rgba(80, 104, 72, 0.08);
+            box-shadow: 0 10px 24px rgba(50, 84, 118, 0.08);
             min-height: 126px;
         }
         .metric-title {
@@ -153,26 +182,99 @@ st.markdown(
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            color: #5f6f52;
+            color: #47627d;
             margin-bottom: 0.45rem;
         }
         .metric-value {
             font-size: 1.8rem;
             font-weight: 700;
-            color: #274029;
+            color: #17324d;
             line-height: 1.1;
             margin-bottom: 0.35rem;
         }
         .metric-subtitle {
-            color: #52634a;
+            color: #4f6478;
             font-size: 0.9rem;
         }
         .section-note {
-            background: rgba(255, 248, 235, 0.8);
-            border-left: 4px solid #9f7e52;
+            background: #fff8ea;
+            border-left: 4px solid #d97706;
             padding: 0.9rem 1rem;
             border-radius: 10px;
             margin-bottom: 1rem;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 0.45rem;
+        }
+        .stTabs [data-baseweb="tab"] {
+            background: #e6eef8;
+            border-radius: 999px;
+            color: #21415f;
+            padding: 0.55rem 1rem;
+            border: 1px solid #c8d8ea;
+        }
+        .stTabs [aria-selected="true"] {
+            background: #1f6aa5 !important;
+            color: #ffffff !important;
+            border-color: #1f6aa5 !important;
+        }
+        .stSelectbox label,
+        .stMultiSelect label,
+        .stNumberInput label,
+        .stSlider label {
+            color: #17212b !important;
+            font-weight: 600;
+        }
+        .stSelectbox [data-baseweb="select"] > div,
+        .stMultiSelect [data-baseweb="select"] > div {
+            background: #ffffff !important;
+            color: #17212b !important;
+            border: 1px solid #bfd0e2 !important;
+            box-shadow: none !important;
+        }
+        .stSelectbox [data-baseweb="select"] input,
+        .stMultiSelect [data-baseweb="select"] input {
+            color: #17212b !important;
+            -webkit-text-fill-color: #17212b !important;
+        }
+        .stSelectbox [data-baseweb="select"] span,
+        .stMultiSelect [data-baseweb="select"] span,
+        .stSelectbox [data-baseweb="select"] svg,
+        .stMultiSelect [data-baseweb="select"] svg {
+            color: #17212b !important;
+            fill: #17212b !important;
+        }
+        div[data-baseweb="popover"] ul {
+            background: #ffffff !important;
+            border: 1px solid #bfd0e2 !important;
+        }
+        div[data-baseweb="popover"] li {
+            background: #ffffff !important;
+            color: #17212b !important;
+        }
+        div[data-baseweb="popover"] li:hover {
+            background: #e8f1fb !important;
+        }
+        .stMultiSelect [data-baseweb="tag"] {
+            background: #dbeafe !important;
+            border-radius: 999px !important;
+        }
+        .stMultiSelect [data-baseweb="tag"] span,
+        .stMultiSelect [data-baseweb="tag"] svg {
+            color: #17324d !important;
+            fill: #17324d !important;
+        }
+        .stNumberInput input {
+            background: #ffffff !important;
+            color: #17212b !important;
+            border: 1px solid #bfd0e2 !important;
+        }
+        .stDataFrame, div[data-testid="stMetric"] {
+            background: #ffffff;
+            border-radius: 12px;
+        }
+        h1, h2, h3, h4, h5, h6, label, p, li, span, div {
+            color: #17212b;
         }
     </style>
     """,
@@ -248,11 +350,11 @@ with tabs[0]:
             overview_df.groupby("crop")["yield_kg_per_ha"]
             .mean()
             .sort_values()
-            .plot(kind="barh", color="#6d8b5a", ax=ax)
+            .plot(kind="barh", color=PRIMARY_COLOR, ax=ax)
         )
         ax.set_xlabel("Yield (kg/ha)")
         ax.set_ylabel("")
-        ax.spines[["top", "right"]].set_visible(False)
+        style_axis(ax)
         fig.tight_layout()
         st.pyplot(fig)
 
@@ -263,11 +365,11 @@ with tabs[0]:
             overview_df.groupby("state")["yield_kg_per_ha"]
             .mean()
             .sort_values(ascending=False)
-            .plot(kind="bar", color="#ab6c49", ax=ax)
+            .plot(kind="bar", color=ACCENT_ORANGE, ax=ax)
         )
         ax.tick_params(axis="x", rotation=45)
         ax.set_ylabel("Yield (kg/ha)")
-        ax.spines[["top", "right"]].set_visible(False)
+        style_axis(ax)
         fig.tight_layout()
         st.pyplot(fig)
 
@@ -281,9 +383,18 @@ with tabs[0]:
             aggfunc="mean",
         )
         fig, ax = plt.subplots(figsize=(7, 4))
-        sns.heatmap(pivot_table, annot=True, cmap="YlGn", fmt=".0f", ax=ax)
+        sns.heatmap(
+            pivot_table,
+            annot=True,
+            cmap="Blues",
+            fmt=".0f",
+            linewidths=0.6,
+            linecolor="#d9e5f2",
+            ax=ax,
+        )
         ax.set_xlabel("")
         ax.set_ylabel("")
+        ax.tick_params(colors=TEXT_COLOR)
         fig.tight_layout()
         st.pyplot(fig)
 
@@ -382,10 +493,10 @@ with tabs[2]:
             ax.barh(
                 crop_plan["crop"][::-1],
                 crop_plan["predicted_yield_kg_per_ha"][::-1],
-                color="#58764f",
+                color=ACCENT_GREEN,
             )
             ax.set_xlabel("Predicted yield (kg/ha)")
-            ax.spines[["top", "right"]].set_visible(False)
+            style_axis(ax)
             fig.tight_layout()
             st.pyplot(fig)
         else:
@@ -426,10 +537,10 @@ with tabs[3]:
         )
         fig, ax = plt.subplots(figsize=(7, 4))
         compare_frame.set_index("Scenario")["Yield (kg/ha)"].plot(
-            kind="bar", ax=ax, color=["#9f7e52", "#567a4c"]
+            kind="bar", ax=ax, color=[ACCENT_ORANGE, ACCENT_GREEN]
         )
-        ax.spines[["top", "right"]].set_visible(False)
         ax.set_ylabel("Yield (kg/ha)")
+        style_axis(ax)
         fig.tight_layout()
         st.pyplot(fig)
 
@@ -465,9 +576,10 @@ with tabs[4]:
             y="yield_kg_per_ha",
             hue="crop",
             alpha=0.65,
+            palette="tab10",
             ax=ax,
         )
-        ax.spines[["top", "right"]].set_visible(False)
+        style_axis(ax)
         fig.tight_layout()
         st.pyplot(fig)
 
@@ -477,10 +589,10 @@ with tabs[4]:
             data=explorer_df,
             x="season",
             y="yield_kg_per_ha",
-            palette="YlGn",
+            palette=["#1f6aa5", "#3d8b63", "#d97706"],
             ax=ax,
         )
-        ax.spines[["top", "right"]].set_visible(False)
+        style_axis(ax)
         fig.tight_layout()
         st.pyplot(fig)
 
@@ -489,9 +601,12 @@ with tabs[4]:
     sns.heatmap(
         explorer_df[NUMERICAL_FEATURES + ["yield_kg_per_ha"]].corr(),
         annot=True,
-        cmap="YlGn",
+        cmap="RdYlBu_r",
+        linewidths=0.5,
+        linecolor="#d9e5f2",
         ax=ax,
     )
+    ax.tick_params(colors=TEXT_COLOR)
     fig.tight_layout()
     st.pyplot(fig)
 
@@ -510,9 +625,9 @@ with tabs[5]:
         st.subheader("Permutation importance")
         fig, ax = plt.subplots(figsize=(7, 4))
         importance_frame = bundle["importance"].sort_values("importance_mean", ascending=True)
-        ax.barh(importance_frame["feature"], importance_frame["importance_mean"], color="#6e8f5b")
+        ax.barh(importance_frame["feature"], importance_frame["importance_mean"], color=ACCENT_TEAL)
         ax.set_xlabel("Mean importance drop")
-        ax.spines[["top", "right"]].set_visible(False)
+        style_axis(ax)
         fig.tight_layout()
         st.pyplot(fig)
 
@@ -520,11 +635,11 @@ with tabs[5]:
         st.subheader("Residual spread")
         fig, ax = plt.subplots(figsize=(7, 4))
         residuals = bundle["residuals"]
-        ax.scatter(residuals["actual"], residuals["residual"], alpha=0.55, color="#8e5f47")
-        ax.axhline(0, color="#2f4538", linestyle="--", linewidth=1)
+        ax.scatter(residuals["actual"], residuals["residual"], alpha=0.55, color=ACCENT_RED)
+        ax.axhline(0, color=PRIMARY_COLOR, linestyle="--", linewidth=1)
         ax.set_xlabel("Actual yield (kg/ha)")
         ax.set_ylabel("Residual")
-        ax.spines[["top", "right"]].set_visible(False)
+        style_axis(ax)
         fig.tight_layout()
         st.pyplot(fig)
 
